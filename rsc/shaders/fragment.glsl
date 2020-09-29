@@ -28,6 +28,14 @@ float beckmannNDF(vec3 unitNormal, vec3 midLightCamera)
 	return num / denom;
 }
 
+float ggxNDF(vec3 unitNormal, vec3 midLightCamera)
+{
+	float alpha = roughness * roughness;
+	float dotNormalMid = dot(unitNormal, midLightCamera);
+	float b = dotNormalMid * dotNormalMid * (alpha * alpha - 1) + 1;
+	return (alpha * alpha) / (pi * b * b);
+}
+
 float geometricAttenuation(vec3 unitToLight, vec3 unitToCamera, vec3 unitNormal)
 {
 	float dotNormalLight = dot(unitNormal, unitToLight);
@@ -65,7 +73,8 @@ void main()
 
 		// Beckmann NDF
 		vec3 midLightCamera = normalize(unitToCamera + unitToLight);
-		float d = beckmannNDF(unitNormal, midLightCamera);
+		//float d = beckmannNDF(unitNormal, midLightCamera);
+		float d = ggxNDF(unitNormal, midLightCamera);
 		float g = geometricAttenuation(unitToLight, unitToCamera, unitNormal);
 		vec3 f = fresnelReflectance(unitToCamera, midLightCamera);
 		vec3 num = d * g * f;
@@ -74,5 +83,6 @@ void main()
 		specular += lightEnergy * specularStrength * num / denom;  
 	}
 	
-	fragColor = vec4((ambient + diffuse + specular)*surfaceColor, 1.0f);
+	vec3 finalColor = (ambient + diffuse + specular) * surfaceColor;
+	fragColor = vec4(finalColor, 1.0f);
 }
