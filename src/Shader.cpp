@@ -119,10 +119,10 @@ void Shader::setUniformMatrix4fv(const char *uniform, const glm::mat4 &matrix) c
 	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-void Shader::setUniform3fv(const char *uniform, const glm::vec3 &vec) const
+void Shader::setUniform3fv(const char *uniform, size_t count, const glm::vec3* vec) const
 {
 	GLint uniformLocation = glGetUniformLocation(id, uniform);
-	glUniform3fv(uniformLocation, 1, glm::value_ptr(vec));
+	glUniform3fv(uniformLocation, count, glm::value_ptr(vec[0]));
 }
 
 void Shader::setUniform4fv(const char *uniform, const glm::vec4 &vec) const

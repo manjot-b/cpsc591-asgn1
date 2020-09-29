@@ -7,12 +7,14 @@ layout (location = 1) in vec3 inNormal;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 perspective;
+uniform vec3 lightPosition;
 
-out vec4 vertexColor;
+out vec3 surfaceNormal;
 
 void main()
 {
-    gl_Position = perspective * view * model * vec4(inPosition, 1.0);
-	//vertexColor = vec4(inColor, 1.0);
-	vertexColor = vec4(inNormal, 1.0);
+	vec4 worldPosition = model * vec4(inPosition, 1.0f);
+    gl_Position = perspective * view * worldPosition;
+
+	surfaceNormal = (model * vec4(inNormal, 1.0f)).xyz;
 }

@@ -6,7 +6,7 @@
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0), scale(1)
+	rotate(0), scale(1), ambientStrength(0.3f)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -16,15 +16,26 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 		models.emplace_back(path, shader);
 	}	
 	
+	// Setup perspective and camera matricies.
 	perspective = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 	view = glm::lookAt(
 				glm::vec3(0, 2, 3),	// camera position
 				glm::vec3(0, 0, 0),	// camera direction
 				glm::vec3(0, 1, 0)	// up direction
 			);
+
+	// Set default values of various constants, coefficients and colors
+	// for the fragment and vertex shader.
+	lightColors = {
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	};
+
 	shader.use();
 	shader.setUniformMatrix4fv("perspective", perspective);
 	shader.setUniformMatrix4fv("view", view);
+	shader.setUniform3fv("lightColors", lightColors.size(), lightColors.data());
+	shader.setUniform1f("ambientStrength", ambientStrength);
 	glUseProgram(0);	// unbind shader
 }
 

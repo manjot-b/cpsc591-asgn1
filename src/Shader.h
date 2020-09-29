@@ -21,7 +21,7 @@ class Shader
 		void setUniform1i(const char *uniform, int value) const;
 		void setUniform1f(const char *uniform, float value) const;
 		void setUniformMatrix4fv(const char *uniform, const glm::mat4 &matrix) const;
-		void setUniform3fv(const char *uniform, const glm::vec3 &vec) const;
+		void setUniform3fv(const char *uniform, size_t count, const glm::vec3* vec) const;
 		void setUniform4fv(const char *uniform, const glm::vec4 &vec) const;
 
 	private:

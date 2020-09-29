@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <array>
 #include <string>
 #include <glm/glm.hpp>
 
@@ -27,6 +28,9 @@ class Renderer
 		float scale;
 		glm::mat4 view;
 		glm::mat4 perspective;
+
+		std::array<glm::vec3, 2> lightColors;
+		float ambientStrength;
 
 		void initWindow();
 		void processWindowInput();
