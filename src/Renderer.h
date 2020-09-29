@@ -33,7 +33,10 @@ class Renderer
 		std::array<glm::vec3, 2> lightPositions;
 		float ambientStrength;
 		float diffuseStrength;
+		float specularStrength;
+		float roughness;
 		glm::vec3 surfaceColor;
+		glm::vec3 fresnel;
 
 		void initWindow();
 		void processWindowInput();

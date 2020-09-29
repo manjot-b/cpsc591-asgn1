@@ -2,12 +2,14 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0), scale(1), ambientStrength(0.3f), diffuseStrength(0.8f),
-	surfaceColor(0.722, 0.451, 0.2)
+	rotate(0.0f), scale(1.0f), ambientStrength(0.3f), diffuseStrength(0.8f),
+	specularStrength(0.7f), roughness(0.3f), surfaceColor(0.722, 0.451, 0.2),
+	fresnel(1.0f, 0.71f, 0.29f)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -20,10 +22,11 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	// Setup perspective and camera matricies.
 	perspective = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 	view = glm::lookAt(
-				glm::vec3(0, 2, 1.5f),	// camera position
-				glm::vec3(0, 0, 0),	// camera direction
-				glm::vec3(0, 1, 0)	// up direction
+				glm::vec3(0.f, 0.1f, 2.f),	// camera position
+				glm::vec3(0.f, 0.f, 0.f),	// camera direction
+				glm::vec3(0.f, 1.f, 0.f)	// up direction
 			);
+	//std::cout<<glm::to_string(view)<<std::endl;
 
 	// Set default values of various constants, coefficients and colors
 	// for the fragment and vertex shader.
@@ -40,12 +43,20 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	shader.setUniformMatrix4fv("perspective", perspective);
 	shader.setUniformMatrix4fv("view", view);
 
+	// This extracts the position of the camera.
+	glm::vec3 toCamera = glm::inverse(view) * glm::vec4(0.f, 0.f, 0.f, 1.f);
+	shader.setUniform3fv("toCamera", 1, &toCamera);
+	//std::cout<<glm::to_string(toCamera)<<std::endl;
+
 	shader.setUniform3fv("lightColors", lightColors.size(), lightColors.data());
 	shader.setUniform3fv("lightPositions", lightPositions.size(), lightPositions.data());
 
 	shader.setUniform3fv("surfaceColor", 1, &surfaceColor);
 	shader.setUniform1f("ambientStrength", ambientStrength);
 	shader.setUniform1f("diffuseStrength", diffuseStrength);
+	shader.setUniform1f("specularStrength", specularStrength);
+	shader.setUniform1f("roughness", roughness);
+	shader.setUniform3fv("fresnel", 1, &fresnel);
 	glUseProgram(0);	// unbind shader
 }
 
