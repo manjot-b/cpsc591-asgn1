@@ -30,7 +30,10 @@ class Renderer
 		glm::mat4 perspective;
 
 		std::array<glm::vec3, 2> lightColors;
+		std::array<glm::vec3, 2> lightPositions;
 		float ambientStrength;
+		float diffuseStrength;
+		glm::vec3 surfaceColor;
 
 		void initWindow();
 		void processWindowInput();

@@ -6,7 +6,8 @@
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0), scale(1), ambientStrength(0.3f)
+	rotate(0), scale(1), ambientStrength(0.3f), diffuseStrength(0.8f),
+	surfaceColor(0.722, 0.451, 0.2)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -19,7 +20,7 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	// Setup perspective and camera matricies.
 	perspective = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 	view = glm::lookAt(
-				glm::vec3(0, 2, 3),	// camera position
+				glm::vec3(0, 2, 1.5f),	// camera position
 				glm::vec3(0, 0, 0),	// camera direction
 				glm::vec3(0, 1, 0)	// up direction
 			);
@@ -30,12 +31,21 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 		glm::vec3(1.0f, 1.0f, 1.0f),
 		glm::vec3(1.0f, 1.0f, 1.0f)
 	};
+	lightPositions = {
+		 glm::vec3(0.f, 0.f, 2.f),
+		 glm::vec3(-2.f, -1.f, 2.f) 
+	};
 
 	shader.use();
 	shader.setUniformMatrix4fv("perspective", perspective);
 	shader.setUniformMatrix4fv("view", view);
+
 	shader.setUniform3fv("lightColors", lightColors.size(), lightColors.data());
+	shader.setUniform3fv("lightPositions", lightPositions.size(), lightPositions.data());
+
+	shader.setUniform3fv("surfaceColor", 1, &surfaceColor);
 	shader.setUniform1f("ambientStrength", ambientStrength);
+	shader.setUniform1f("diffuseStrength", diffuseStrength);
 	glUseProgram(0);	// unbind shader
 }
 
