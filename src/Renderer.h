@@ -29,6 +29,9 @@ class Renderer
 		glm::mat4 view;
 		glm::mat4 perspective;
 
+		float rotationSpeed;
+		float scaleSpeed;
+	
 		std::array<glm::vec3, 2> lightColors;
 		std::array<glm::vec3, 2> lightPositions;
 		float ambientStrength;
@@ -37,7 +40,8 @@ class Renderer
 		float roughness;
 		glm::vec3 surfaceColor;
 		glm::vec3 fresnel;
+		Model::FragmentShaderSettings fragmentSettings;
 
 		void initWindow();
-		void processWindowInput();
+		static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };

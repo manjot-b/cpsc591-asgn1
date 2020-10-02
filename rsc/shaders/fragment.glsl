@@ -12,6 +12,13 @@ uniform vec3 surfaceColor;
 uniform vec3 toCamera;
 uniform vec3 fresnel;
 
+uniform bool useBeckmann = true;
+uniform bool useGGX = false;
+uniform bool useG = true;
+uniform bool useF = true;
+uniform bool useDenom = true;
+uniform bool usePi = true;
+
 out vec4 fragColor;
 
 #define PI 3.1415926535
@@ -73,18 +80,31 @@ void main()
 		float angleNormalLight = max(dot(unitNormal, unitToLight), 0);
 		vec3 lightEnergy = lightColors[i] * angleNormalLight; 
 		
-		diffuse += diffuseStrength * surfaceColor/ PI;
+		diffuse += diffuseStrength * surfaceColor/ pow(PI, int(usePi));
 
 		vec3 midLightCamera = normalize(unitToCamera + unitToLight);
-		float d = beckmannNDF(unitNormal, midLightCamera);
-		//float d = ggxNDF(unitNormal, midLightCamera);
-		float g = geometricAttenuation(unitToLight, unitToCamera, unitNormal);
-		vec3 f = fresnelReflectance(unitToCamera, midLightCamera);
-		vec3 num = d * g * f;
+		
+		// Set the bools from the cpu so that at most only one NDF is used at a time.
+		float dBeckmann = pow(beckmannNDF(unitNormal, midLightCamera), int(useBeckmann));
+		float dGGX = pow(ggxNDF(unitNormal, midLightCamera), int(useGGX));
 
-		// Don't clamp these dot products to 0 because they are part
-		// of the denominator.
-		float denom = 4 * dot(unitNormal, unitToLight)* dot(unitToCamera, unitNormal);
+		float g = pow(geometricAttenuation(unitToLight, unitToCamera, unitNormal), int(useG));
+		vec3 f = pow(fresnelReflectance(unitToCamera, midLightCamera), vec3(int(useG)));
+		vec3 num = dBeckmann * dGGX * g * f;
+
+		// Raising the denominator to the power of int(true) == 1 as optimization produces
+		// weird results. I don't know why...
+		float denom;
+		if (useDenom)
+		{
+			// Don't clamp these dot products to 0 because they are part
+			// of the denominator.
+			denom = 4 * dot(unitNormal, unitToLight) * dot(unitToCamera, unitNormal);
+		}
+		else
+		{
+			denom = 1;
+		}
 
 		specular += specularStrength * num / denom;  
 

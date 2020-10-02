@@ -11,14 +11,25 @@ class Model
 	public:
 		Model(const std::string &objPath, Shader shader);
 		~Model();
+
+		/**
+		 *	Settings that will be set in the fragment shader.
+		 */
+		struct FragmentShaderSettings
+		{
+			bool useBeckmann;
+			bool useGGX;
+		};
 		void draw() const;
 		void update();
 		void rotate(const glm::vec3 &rotate);
 		void scale(float scale);
+		void setFragmentShaderSettings(const FragmentShaderSettings& settings);
 
 	private:
 		Shader shader;
 		std::vector<Mesh*> meshes;
+		FragmentShaderSettings fragmentSettings;
 
 		glm::mat4 modelMatrix;
 		glm::vec3 m_rotate;			// how much to rotate along each axis
@@ -31,5 +42,5 @@ class Model
 		} boundingBox;
 
 		void extractDataFromNode(const aiScene* scene, const aiNode* node);
-//		void calcBoundingBox(ObjModel &obj);
+		void sendUniforms() const;
 };

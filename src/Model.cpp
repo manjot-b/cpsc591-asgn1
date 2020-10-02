@@ -64,7 +64,7 @@ void Model::extractDataFromNode(const aiScene* scene, const aiNode* node)
 void Model::draw() const
 {
 	shader.use();
-	shader.setUniformMatrix4fv("model", modelMatrix);
+	sendUniforms();
 
 	for(auto &mesh : meshes)
 	{
@@ -102,6 +102,25 @@ void Model::scale(const float scale)
 {
 	m_scale = scale;
 }
+
+void Model::setFragmentShaderSettings(const FragmentShaderSettings& settings)
+{
+	fragmentSettings = settings;	
+}
+
+/**
+ *	Shader must be in use before this function is called.
+ */
+void Model::sendUniforms() const
+{
+	// Vertex Shader
+	shader.setUniformMatrix4fv("model", modelMatrix);
+
+	// Fragment Shader
+	shader.setUniform1i("useBeckmann", fragmentSettings.useBeckmann);
+	shader.setUniform1i("useGGX", fragmentSettings.useGGX);
+}
+
 /*
 void Model::calcBoundingBox(ObjModel &obj)
 {

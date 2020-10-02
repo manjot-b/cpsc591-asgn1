@@ -7,9 +7,9 @@
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0.0f), scale(1.0f), ambientStrength(.05f), diffuseStrength(0.5f),
-	specularStrength(0.7f), roughness(0.01f), surfaceColor(0.722, 0.451, 0.2),
-	fresnel(0.95f, 0.64f, 0.54f)
+	rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)), scaleSpeed(1.1f),
+	ambientStrength(.05f), diffuseStrength(0.5f), specularStrength(0.7f),
+	roughness(0.01f), surfaceColor(0.722, 0.451, 0.2), fresnel(0.95f, 0.64f, 0.54f)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -50,6 +50,9 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 
 	shader.setUniform3fv("lightColors", lightColors.size(), lightColors.data());
 	shader.setUniform3fv("lightPositions", lightPositions.size(), lightPositions.data());
+
+	fragmentSettings.useBeckmann = true;
+	fragmentSettings.useGGX = false;
 
 	shader.setUniform3fv("surfaceColor", 1, &surfaceColor);
 	shader.setUniform1f("ambientStrength", ambientStrength);
@@ -107,8 +110,11 @@ void Renderer::initWindow()
 
 		glViewport(xPos, yPos, viewPortWidth, viewPortHeight);
 	});
-	glEnable(GL_DEPTH_TEST);
 
+	glfwSetWindowUserPointer(window, static_cast<void*>(this));
+	glfwSetKeyCallback(window, keyCallback);
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::run()
@@ -120,12 +126,11 @@ void Renderer::run()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		processWindowInput();
-
 		for(auto& model : models)
 		{
 			model.rotate(rotate);
 			model.scale(scale);
+			model.setFragmentShaderSettings(fragmentSettings);
 			model.update();
 			model.draw();
 		}
@@ -137,55 +142,70 @@ void Renderer::run()
 	}
 }
 
-void Renderer::processWindowInput()
+void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	float rotationSpeed = glm::radians(3.0f);
-	float scaleSpeed = 1.01;
+	Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
 
 	// Close window
-	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	// Rotations
-	if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if(action == GLFW_REPEAT || action == GLFW_PRESS)
 	{
-		rotate.x -= rotationSpeed;
-	}
+		switch(key)
+		{
+			// Rotations
+			case GLFW_KEY_W:
+				renderer->rotate.x -= renderer->rotationSpeed;
+				break;
+			case GLFW_KEY_S:
+				renderer->rotate.x += renderer->rotationSpeed;
+				break;
+			case GLFW_KEY_E:
+				renderer->rotate.y += renderer->rotationSpeed;
+				break;
+			case GLFW_KEY_Q:
+				renderer->rotate.y -= renderer->rotationSpeed;
+				break;
+			case GLFW_KEY_D:
+				renderer->rotate.z -= renderer->rotationSpeed;
+				break;
+			case GLFW_KEY_A:
+				renderer->rotate.z += renderer->rotationSpeed;
+				break;
 
-	if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		rotate.x += rotationSpeed;
-	}
+			// Scaling
+			case GLFW_KEY_Z:
+				renderer->scale *= renderer->scaleSpeed;
+				break;
+			case GLFW_KEY_X:
+				renderer->scale /= renderer->scaleSpeed;
+				break;
 
-	if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-	{
-		rotate.y += rotationSpeed;
-	}
-
-	if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-	{
-		rotate.y -= rotationSpeed;
-	}
-
-	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		rotate.z -= rotationSpeed;
-	}
-
-	if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		rotate.z += rotationSpeed;
-	}
-
-	if(glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-	{
-		scale *= scaleSpeed;
-	}
-	if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-	{
-		scale /= scaleSpeed;
+			// Toggle fragment shader settings.
+			case GLFW_KEY_H:
+				if(!renderer->fragmentSettings.useBeckmann && !renderer->fragmentSettings.useGGX)
+				{
+					// Using D uses Beckmann by default.
+					renderer->fragmentSettings.useBeckmann = true;
+				}
+				else
+				{
+					renderer->fragmentSettings.useBeckmann = false;
+					renderer->fragmentSettings.useGGX = false;
+				}
+				break;
+			case GLFW_KEY_N:
+				renderer->fragmentSettings.useBeckmann = !renderer->fragmentSettings.useBeckmann;
+				renderer->fragmentSettings.useGGX = !renderer->fragmentSettings.useBeckmann;
+				break;
+			case GLFW_KEY_M:
+				renderer->fragmentSettings.useGGX = !renderer->fragmentSettings.useGGX;
+				renderer->fragmentSettings.useBeckmann = !renderer->fragmentSettings.useGGX;
+				break;
+		}
 	}
 }
 
