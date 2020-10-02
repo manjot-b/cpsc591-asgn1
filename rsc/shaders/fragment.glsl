@@ -14,32 +14,32 @@ uniform vec3 fresnel;
 
 out vec4 fragColor;
 
-const float pi = 3.1415926535;
-const float e = 2.7182818284;
+#define PI 3.1415926535
+#define E 2.7182818284
 
 float beckmannNDF(vec3 unitNormal, vec3 midLightCamera)
 {
-	float alpha = acos(dot(unitNormal, midLightCamera));	
+	float alpha = acos(max(dot(unitNormal, midLightCamera), 0));
 	float beta = tan(alpha) / roughness;
 	float exponent = -beta * beta;
-	float num = pow(e, exponent);
+	float num = pow(E, exponent);
 	float cosAlpha = cos(alpha);
-	float denom = pi * roughness * roughness * cosAlpha * cosAlpha * cosAlpha * cosAlpha;
+	float denom = PI * roughness * roughness * cosAlpha * cosAlpha * cosAlpha * cosAlpha;
 	return num / denom;
 }
 
 float ggxNDF(vec3 unitNormal, vec3 midLightCamera)
 {
 	float alpha = roughness * roughness;
-	float dotNormalMid = dot(unitNormal, midLightCamera);
+	float dotNormalMid = max(dot(unitNormal, midLightCamera), 0);
 	float b = dotNormalMid * dotNormalMid * (alpha * alpha - 1) + 1;
-	return (alpha * alpha) / (pi * b * b);
+	return (alpha * alpha) / (PI * b * b);
 }
 
 float geometricAttenuation(vec3 unitToLight, vec3 unitToCamera, vec3 unitNormal)
 {
-	float dotNormalLight = dot(unitNormal, unitToLight);
-	float dotNormalCamera = dot(unitNormal, unitToCamera);
+	float dotNormalLight = max(dot(unitNormal, unitToLight), 0);
+	float dotNormalCamera = max(dot(unitNormal, unitToCamera), 0);
 	float k = (roughness + 1) * (roughness + 1) / 8.0f;
 	float a = dotNormalLight / (dotNormalLight * (1 - k) + k);
 	float b = dotNormalCamera / (dotNormalCamera * (1 - k) + k);
@@ -48,16 +48,19 @@ float geometricAttenuation(vec3 unitToLight, vec3 unitToCamera, vec3 unitNormal)
 
 vec3 fresnelReflectance(vec3 unitToCamera, vec3 midLightCamera)
 {
-	float a = (1 - dot(unitToCamera, midLightCamera));
+	float a = (1 - max(dot(unitToCamera, midLightCamera), 0));
 	return fresnel + (1 - fresnel) * a * a * a * a* a;
 }
 
 void main()
 {
+	vec3 finalColor = vec3(0.0f, 0.0f, 0.0f);
+
 	// Ambient color
 	vec3 ambient = ambientStrength * lightColors[0];
-	vec3 diffuse = vec3(0, 0, 0);
-	vec3 specular = vec3(0, 0, 0);
+	finalColor += ambient;
+	vec3 diffuse = vec3(0.0f, 0.0f, 0.0f);
+	vec3 specular = vec3(0.0f);
 
 	vec3 unitNormal = normalize(surfaceNormal);
 	vec3 unitToCamera = normalize(toCamera);
@@ -67,22 +70,27 @@ void main()
 	for (int i = 0; i < 2; i++)
 	{
 		vec3 unitToLight = normalize(toLight[i]);
-		vec3 lightEnergy = lightColors[i] * max(dot(unitNormal, unitToLight), 0);
+		float angleNormalLight = max(dot(unitNormal, unitToLight), 0);
+		vec3 lightEnergy = lightColors[i] * angleNormalLight; 
 		
-		diffuse += lightEnergy * diffuseStrength / pi;
+		diffuse += diffuseStrength * surfaceColor/ PI;
 
-		// Beckmann NDF
 		vec3 midLightCamera = normalize(unitToCamera + unitToLight);
-		//float d = beckmannNDF(unitNormal, midLightCamera);
-		float d = ggxNDF(unitNormal, midLightCamera);
+		float d = beckmannNDF(unitNormal, midLightCamera);
+		//float d = ggxNDF(unitNormal, midLightCamera);
 		float g = geometricAttenuation(unitToLight, unitToCamera, unitNormal);
 		vec3 f = fresnelReflectance(unitToCamera, midLightCamera);
 		vec3 num = d * g * f;
-		float denom = 4 * dot(unitToLight, unitNormal) * dot(unitToCamera, unitNormal);
 
-		specular += lightEnergy * specularStrength * num / denom;  
+		// Don't clamp these dot products to 0 because they are part
+		// of the denominator.
+		float denom = 4 * dot(unitNormal, unitToLight)* dot(unitToCamera, unitNormal);
+
+		specular += specularStrength * num / denom;  
+
+		finalColor += lightEnergy * (diffuse + specular);
+
 	}
 	
-	vec3 finalColor = (ambient + diffuse + specular) * surfaceColor;
 	fragColor = vec4(finalColor, 1.0f);
 }

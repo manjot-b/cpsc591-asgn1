@@ -7,9 +7,9 @@
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0.0f), scale(1.0f), ambientStrength(0.3f), diffuseStrength(0.8f),
-	specularStrength(0.7f), roughness(0.3f), surfaceColor(0.722, 0.451, 0.2),
-	fresnel(1.0f, 0.71f, 0.29f)
+	rotate(0.0f), scale(1.0f), ambientStrength(.05f), diffuseStrength(0.5f),
+	specularStrength(0.7f), roughness(0.01f), surfaceColor(0.722, 0.451, 0.2),
+	fresnel(0.95f, 0.64f, 0.54f)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -22,7 +22,7 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	// Setup perspective and camera matricies.
 	perspective = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 	view = glm::lookAt(
-				glm::vec3(0.f, 0.1f, 2.f),	// camera position
+				glm::vec3(0.f, 0.5f, 2.f),	// camera position
 				glm::vec3(0.f, 0.f, 0.f),	// camera direction
 				glm::vec3(0.f, 1.f, 0.f)	// up direction
 			);
@@ -32,7 +32,7 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	// for the fragment and vertex shader.
 	lightColors = {
 		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f)
+		glm::vec3(0.5f, 0.5f, 0.5f)
 	};
 	lightPositions = {
 		 glm::vec3(0.f, 0.f, 2.f),
