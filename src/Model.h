@@ -19,6 +19,10 @@ class Model
 		{
 			bool useBeckmann;
 			bool useGGX;
+			bool useG;
+			bool useF;
+			bool useDenom;
+			bool usePi;
 		};
 		void draw() const;
 		void update();

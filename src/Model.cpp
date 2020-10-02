@@ -119,6 +119,10 @@ void Model::sendUniforms() const
 	// Fragment Shader
 	shader.setUniform1i("useBeckmann", fragmentSettings.useBeckmann);
 	shader.setUniform1i("useGGX", fragmentSettings.useGGX);
+	shader.setUniform1i("useG", fragmentSettings.useG);
+	shader.setUniform1i("useF", fragmentSettings.useF);
+	shader.setUniform1i("usePi", fragmentSettings.usePi);
+	shader.setUniform1i("useDenom", fragmentSettings.useDenom);
 }
 
 /*

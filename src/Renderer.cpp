@@ -53,6 +53,10 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 
 	fragmentSettings.useBeckmann = true;
 	fragmentSettings.useGGX = false;
+	fragmentSettings.useG = true;
+	fragmentSettings.useF = true;
+	fragmentSettings.usePi = true;
+	fragmentSettings.useDenom = true;
 
 	shader.setUniform3fv("surfaceColor", 1, &surfaceColor);
 	shader.setUniform1f("ambientStrength", ambientStrength);
@@ -197,13 +201,21 @@ void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action
 					renderer->fragmentSettings.useGGX = false;
 				}
 				break;
-			case GLFW_KEY_N:
+			case GLFW_KEY_M:
 				renderer->fragmentSettings.useBeckmann = !renderer->fragmentSettings.useBeckmann;
 				renderer->fragmentSettings.useGGX = !renderer->fragmentSettings.useBeckmann;
 				break;
-			case GLFW_KEY_M:
-				renderer->fragmentSettings.useGGX = !renderer->fragmentSettings.useGGX;
-				renderer->fragmentSettings.useBeckmann = !renderer->fragmentSettings.useGGX;
+			case GLFW_KEY_J:
+				renderer->fragmentSettings.useG = !renderer->fragmentSettings.useG;
+				break;
+			case GLFW_KEY_K:
+				renderer->fragmentSettings.useF = !renderer->fragmentSettings.useF;
+				break;
+			case GLFW_KEY_P:
+				renderer->fragmentSettings.usePi = !renderer->fragmentSettings.usePi;
+				break;
+			case GLFW_KEY_O:
+				renderer->fragmentSettings.useDenom = !renderer->fragmentSettings.useDenom;
 				break;
 		}
 	}
