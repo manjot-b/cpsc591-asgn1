@@ -8,7 +8,7 @@
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
 	rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)), scaleSpeed(1.1f),
-	ambientStrength(.05f), diffuseStrength(0.5f), specularStrength(0.7f),
+	ambientStrength(.2f), diffuseStrength(1.0f), specularStrength(0.7f),
 	roughness(0.01f), surfaceColor(0.722, 0.451, 0.2), fresnel(0.95f, 0.64f, 0.54f)
 {
 	initWindow();

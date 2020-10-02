@@ -23,6 +23,7 @@ out vec4 fragColor;
 
 #define PI 3.1415926535
 #define E 2.7182818284
+#define EPSILON 1e-6
 
 float beckmannNDF(vec3 unitNormal, vec3 midLightCamera)
 {
@@ -31,7 +32,7 @@ float beckmannNDF(vec3 unitNormal, vec3 midLightCamera)
 	float exponent = -beta * beta;
 	float num = pow(E, exponent);
 	float cosAlpha = cos(alpha);
-	float denom = PI * roughness * roughness * cosAlpha * cosAlpha * cosAlpha * cosAlpha;
+	float denom = PI * roughness * roughness * cosAlpha * cosAlpha * cosAlpha * cosAlpha + EPSILON;
 	return num / denom;
 }
 
@@ -66,8 +67,6 @@ void main()
 	// Ambient color
 	vec3 ambient = ambientStrength * lightColors[0];
 	finalColor += ambient;
-	vec3 diffuse = vec3(0.0f, 0.0f, 0.0f);
-	vec3 specular = vec3(0.0f);
 
 	vec3 unitNormal = normalize(surfaceNormal);
 	vec3 unitToCamera = normalize(toCamera);
@@ -76,6 +75,9 @@ void main()
 	// components of final color.
 	for (int i = 0; i < 2; i++)
 	{
+		vec3 diffuse = vec3(0.0f);
+		vec3 specular = vec3(0.0f);
+
 		vec3 unitToLight = normalize(toLight[i]);
 		float angleNormalLight = max(dot(unitNormal, unitToLight), 0);
 		vec3 lightEnergy = lightColors[i] * angleNormalLight; 
@@ -85,26 +87,17 @@ void main()
 		vec3 midLightCamera = normalize(unitToCamera + unitToLight);
 		
 		// Set the bools from the cpu so that at most only one NDF is used at a time.
-		float dBeckmann = pow(beckmannNDF(unitNormal, midLightCamera), int(useBeckmann));
-		float dGGX = pow(ggxNDF(unitNormal, midLightCamera), int(useGGX));
+		float dBeckmann = useBeckmann ? beckmannNDF(unitNormal, midLightCamera) : 1.0f;
+		float dGGX = useGGX ? ggxNDF(unitNormal, midLightCamera) : 1.0f;
 
-		float g = pow(geometricAttenuation(unitToLight, unitToCamera, unitNormal), int(useG));
-		vec3 f = pow(fresnelReflectance(unitToCamera, midLightCamera), vec3(int(useG)));
+		float g = useG ? geometricAttenuation(unitToLight, unitToCamera, unitNormal) : 1.0f;
+		vec3 f = useG ? fresnelReflectance(unitToCamera, midLightCamera) : vec3(1.0f);
 		vec3 num = dBeckmann * dGGX * g * f;
 
-		// Raising the denominator to the power of int(true) == 1 as optimization produces
-		// weird results. I don't know why...
-		float denom;
-		if (useDenom)
-		{
-			// Don't clamp these dot products to 0 because they are part
-			// of the denominator.
-			denom = 4 * dot(unitNormal, unitToLight) * dot(unitToCamera, unitNormal);
-		}
-		else
-		{
-			denom = 1;
-		}
+		// Don't clamp these dot products to 0 because they are part
+		// of the denominator.
+		float denom = useDenom ?
+			4 * dot(unitNormal, unitToLight) * dot(unitToCamera, unitNormal) : 1.0f;
 
 		specular += specularStrength * num / denom;  
 
