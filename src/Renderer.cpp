@@ -7,9 +7,7 @@
 #include "Renderer.h"
 
 Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)), scaleSpeed(1.1f),
-	ambientStrength(.2f), diffuseStrength(1.0f), specularStrength(0.7f),
-	roughness(0.01f), surfaceColor(0.722, 0.451, 0.2), fresnel(0.95f, 0.64f, 0.54f)
+	rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)), scaleSpeed(1.1f)
 {
 	initWindow();
 	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -39,6 +37,19 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 		 glm::vec3(-2.f, -1.f, 2.f) 
 	};
 
+	fresnels = {
+		glm::vec3(0.15f, 0.15f, 0.15f), // Water
+		glm::vec3(0.21f, 0.21f, 0.21f), // Plastic / glass (low)
+		glm::vec3(0.24f, 0.24f, 0.24f), // Plastic high
+		glm::vec3(0.31f, 0.31f, 0.31f), // Glass (high) / ruby
+		glm::vec3(0.45f, 0.45f, 0.45f), // Diamond
+		glm::vec3(0.77f, 0.78f, 0.78f), // Iron
+		glm::vec3(0.98f, 0.82f, 0.76f), // Copper
+		glm::vec3(1.00f, 0.86f, 0.57f), // Gold
+		glm::vec3(0.96f, 0.96f, 0.97f), // Aluminium
+		glm::vec3(0.98f, 0.97f, 0.95f), // SIlver
+	};
+
 	shader.use();
 	shader.setUniformMatrix4fv("perspective", perspective);
 	shader.setUniformMatrix4fv("view", view);
@@ -58,12 +69,13 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	fragmentSettings.usePi = true;
 	fragmentSettings.useDenom = true;
 
-	shader.setUniform3fv("surfaceColor", 1, &surfaceColor);
-	shader.setUniform1f("ambientStrength", ambientStrength);
-	shader.setUniform1f("diffuseStrength", diffuseStrength);
-	shader.setUniform1f("specularStrength", specularStrength);
-	shader.setUniform1f("roughness", roughness);
-	shader.setUniform3fv("fresnel", 1, &fresnel);
+	fragmentSettings.roughness = 0.0f;
+	fragmentSettings.ambientStrength = 0.15f;
+	fragmentSettings.diffuseStrength = 1.0f;
+	fragmentSettings.specularStrength = 0.7f;
+	fragmentSettings.surfaceColor = glm::vec3(0.722f, 0.451f, 0.2f);
+	fragmentSettings.fresnel = fresnels[6];
+
 	glUseProgram(0);	// unbind shader
 }
 
@@ -158,65 +170,165 @@ void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action
 
 	if(action == GLFW_REPEAT || action == GLFW_PRESS)
 	{
-		switch(key)
+		Model::FragmentShaderSettings& fragmentSettings = renderer->fragmentSettings;
+		float change = 0.05f;
+
+		if(!(mods & GLFW_MOD_SHIFT))
 		{
-			// Rotations
-			case GLFW_KEY_W:
-				renderer->rotate.x -= renderer->rotationSpeed;
-				break;
-			case GLFW_KEY_S:
-				renderer->rotate.x += renderer->rotationSpeed;
-				break;
-			case GLFW_KEY_E:
-				renderer->rotate.y += renderer->rotationSpeed;
-				break;
-			case GLFW_KEY_Q:
-				renderer->rotate.y -= renderer->rotationSpeed;
-				break;
-			case GLFW_KEY_D:
-				renderer->rotate.z -= renderer->rotationSpeed;
-				break;
-			case GLFW_KEY_A:
-				renderer->rotate.z += renderer->rotationSpeed;
-				break;
+			switch(key)
+			{
+				// Rotations
+				case GLFW_KEY_W:
+					renderer->rotate.x -= renderer->rotationSpeed;
+					break;
+				case GLFW_KEY_S:
+					renderer->rotate.x += renderer->rotationSpeed;
+					break;
+				case GLFW_KEY_E:
+					renderer->rotate.y += renderer->rotationSpeed;
+					break;
+				case GLFW_KEY_Q:
+					renderer->rotate.y -= renderer->rotationSpeed;
+					break;
+				case GLFW_KEY_D:
+					renderer->rotate.z -= renderer->rotationSpeed;
+					break;
+				case GLFW_KEY_A:
+					renderer->rotate.z += renderer->rotationSpeed;
+					break;
 
-			// Scaling
-			case GLFW_KEY_Z:
-				renderer->scale *= renderer->scaleSpeed;
-				break;
-			case GLFW_KEY_X:
-				renderer->scale /= renderer->scaleSpeed;
-				break;
+				// Scaling
+				case GLFW_KEY_Z:
+					renderer->scale *= renderer->scaleSpeed;
+					break;
+				case GLFW_KEY_X:
+					renderer->scale /= renderer->scaleSpeed;
+					break;
 
-			// Toggle fragment shader settings.
-			case GLFW_KEY_H:
-				if(!renderer->fragmentSettings.useBeckmann && !renderer->fragmentSettings.useGGX)
-				{
-					// Using D uses Beckmann by default.
-					renderer->fragmentSettings.useBeckmann = true;
-				}
-				else
-				{
-					renderer->fragmentSettings.useBeckmann = false;
-					renderer->fragmentSettings.useGGX = false;
-				}
-				break;
-			case GLFW_KEY_M:
-				renderer->fragmentSettings.useBeckmann = !renderer->fragmentSettings.useBeckmann;
-				renderer->fragmentSettings.useGGX = !renderer->fragmentSettings.useBeckmann;
-				break;
-			case GLFW_KEY_J:
-				renderer->fragmentSettings.useG = !renderer->fragmentSettings.useG;
-				break;
-			case GLFW_KEY_K:
-				renderer->fragmentSettings.useF = !renderer->fragmentSettings.useF;
-				break;
-			case GLFW_KEY_P:
-				renderer->fragmentSettings.usePi = !renderer->fragmentSettings.usePi;
-				break;
-			case GLFW_KEY_O:
-				renderer->fragmentSettings.useDenom = !renderer->fragmentSettings.useDenom;
-				break;
+				// Toggle fragment shader settings.
+				case GLFW_KEY_H:
+					if(!fragmentSettings.useBeckmann && !fragmentSettings.useGGX)
+					{
+						// Using D uses Beckmann by default.
+						fragmentSettings.useBeckmann = true;
+					}
+					else
+					{
+						fragmentSettings.useBeckmann = false;
+						fragmentSettings.useGGX = false;
+					}
+					break;
+				case GLFW_KEY_M:
+					fragmentSettings.useBeckmann = !fragmentSettings.useBeckmann;
+					fragmentSettings.useGGX = !fragmentSettings.useBeckmann;
+					break;
+				case GLFW_KEY_J:
+					fragmentSettings.useG = !fragmentSettings.useG;
+					break;
+				case GLFW_KEY_K:
+					fragmentSettings.useF = !fragmentSettings.useF;
+					break;
+				case GLFW_KEY_P:
+					fragmentSettings.usePi = !fragmentSettings.usePi;
+					break;
+				case GLFW_KEY_O:
+					fragmentSettings.useDenom = !fragmentSettings.useDenom;
+					break;
+
+				// Change scalar values
+				case GLFW_KEY_T:
+					fragmentSettings.roughness = glm::min(
+							fragmentSettings.roughness + change*0.5f,
+							1.0f);
+					break;
+				case GLFW_KEY_Y:
+					fragmentSettings.ambientStrength = glm::min(
+							fragmentSettings.ambientStrength + change,
+							1.0f);
+					break;
+				case GLFW_KEY_U:
+					fragmentSettings.specularStrength = glm::min(
+							fragmentSettings.specularStrength + change,
+							1.0f);
+					break;
+				case GLFW_KEY_I:
+					fragmentSettings.diffuseStrength = glm::min(
+							fragmentSettings.diffuseStrength + change,
+							1.0f);
+					break;
+				case GLFW_KEY_R:
+					fragmentSettings.surfaceColor.r = glm::min(
+							fragmentSettings.surfaceColor.r + change,
+							1.0f);
+					break;
+				case GLFW_KEY_G:
+					fragmentSettings.surfaceColor.g = glm::min(
+							fragmentSettings.surfaceColor.g + change,
+							1.0f);
+					break;
+				case GLFW_KEY_B:
+					fragmentSettings.surfaceColor.b = glm::min(
+							fragmentSettings.surfaceColor.b + change,
+							1.0f);
+					break;
+			}
+		}
+		else // Shift key pressed
+		{
+			switch(key)
+			{
+				// Change scalar values
+				case GLFW_KEY_T:
+					fragmentSettings.roughness = glm::max(
+							fragmentSettings.roughness - change*0.5f,
+							0.0f);
+					break;
+				case GLFW_KEY_Y:
+					fragmentSettings.ambientStrength = glm::max(
+							fragmentSettings.ambientStrength - change,
+							0.0f);
+					break;
+				case GLFW_KEY_U:
+					fragmentSettings.specularStrength = glm::max(
+							fragmentSettings.specularStrength - change,
+							0.0f);
+					break;
+				case GLFW_KEY_I:
+					fragmentSettings.diffuseStrength = glm::max(
+							fragmentSettings.diffuseStrength - change,
+							0.0f);
+					break;
+				case GLFW_KEY_R:
+					fragmentSettings.surfaceColor.r = glm::max(
+							fragmentSettings.surfaceColor.r - change,
+							0.0f);
+					break;
+				case GLFW_KEY_G:
+					fragmentSettings.surfaceColor.g = glm::max(
+							fragmentSettings.surfaceColor.g - change,
+							0.0f);
+					break;
+				case GLFW_KEY_B:
+					fragmentSettings.surfaceColor.b = glm::max(
+							fragmentSettings.surfaceColor.b - change,
+							0.0f);
+					break;
+				case GLFW_KEY_0: // 0 is last number on keyboard.
+					fragmentSettings.fresnel = renderer->fresnels[9]; 
+					break;
+				case GLFW_KEY_1:
+				case GLFW_KEY_2:
+				case GLFW_KEY_3:
+				case GLFW_KEY_4:
+				case GLFW_KEY_5:
+				case GLFW_KEY_6:
+				case GLFW_KEY_7:
+				case GLFW_KEY_8:
+				case GLFW_KEY_9:
+					unsigned int index = key - GLFW_KEY_0 - 1;
+					fragmentSettings.fresnel = renderer->fresnels[index];
+					break;
+			}
 		}
 	}
 }

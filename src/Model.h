@@ -23,6 +23,14 @@ class Model
 			bool useF;
 			bool useDenom;
 			bool usePi;
+			
+			float roughness;
+			float ambientStrength;
+			float diffuseStrength;
+			float specularStrength;
+
+			glm::vec3 surfaceColor;
+			glm::vec3 fresnel;
 		};
 		void draw() const;
 		void update();

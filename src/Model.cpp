@@ -123,6 +123,14 @@ void Model::sendUniforms() const
 	shader.setUniform1i("useF", fragmentSettings.useF);
 	shader.setUniform1i("usePi", fragmentSettings.usePi);
 	shader.setUniform1i("useDenom", fragmentSettings.useDenom);
+
+	shader.setUniform1f("roughness", fragmentSettings.roughness);
+	shader.setUniform1f("ambientStrength", fragmentSettings.ambientStrength);
+	shader.setUniform1f("diffuseStrength", fragmentSettings.diffuseStrength);
+	shader.setUniform1f("specularStrength", fragmentSettings.specularStrength);
+
+	shader.setUniform3fv("surfaceColor", 1, &fragmentSettings.surfaceColor);
+	shader.setUniform3fv("fresnel", 1, &fragmentSettings.fresnel);
 }
 
 /*

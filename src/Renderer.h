@@ -34,12 +34,7 @@ class Renderer
 	
 		std::array<glm::vec3, 2> lightColors;
 		std::array<glm::vec3, 2> lightPositions;
-		float ambientStrength;
-		float diffuseStrength;
-		float specularStrength;
-		float roughness;
-		glm::vec3 surfaceColor;
-		glm::vec3 fresnel;
+		std::array<glm::vec3, 10> fresnels;
 		Model::FragmentShaderSettings fragmentSettings;
 
 		void initWindow();

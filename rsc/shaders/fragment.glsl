@@ -91,7 +91,7 @@ void main()
 		float dGGX = useGGX ? ggxNDF(unitNormal, midLightCamera) : 1.0f;
 
 		float g = useG ? geometricAttenuation(unitToLight, unitToCamera, unitNormal) : 1.0f;
-		vec3 f = useG ? fresnelReflectance(unitToCamera, midLightCamera) : vec3(1.0f);
+		vec3 f = useF ? fresnelReflectance(unitToCamera, midLightCamera) : vec3(1.0f);
 		vec3 num = dBeckmann * dGGX * g * f;
 
 		// Don't clamp these dot products to 0 because they are part
