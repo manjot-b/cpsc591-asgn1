@@ -4,6 +4,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include <iostream>
+#include <iomanip>
 #include <filesystem>
 
 #include "Renderer.h"
@@ -84,7 +85,7 @@ Renderer::~Renderer()
 {
 	for (auto m : models)
 	{
-		delete m;
+		delete std::get<Model*>(m);
 	}
 	delete shader;
 }
@@ -153,12 +154,13 @@ void Renderer::loadModels(const char* modelDirectory)
 	{
 		if (entry.is_regular_file() && entry.path().extension() == extension)
 		{
-			std::cout << "Loading " << entry.path() << "...";
-			models.push_back(new Model(entry.path(), *shader));
-			std::cout << "Done! Index: " << count << "\n";
+			std::cout << "Loading " << entry.path().string() << "...";
+			models.push_back(std::make_tuple(entry.path(), new Model(entry.path(), *shader)));
+			std::cout << "Done! Index: " << count << '\n';
 			count++;
 		}
 	}
+	std::cout << '\n';
 }
 
 void Renderer::run()
@@ -166,22 +168,28 @@ void Renderer::run()
 
 	while(!glfwWindowShouldClose(window))
 	{
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.2f, 0.25f, 0.45f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		models[modelIndex]->rotate(rotate);
-		models[modelIndex]->scale(scale);
-		models[modelIndex]->setFragmentShaderSettings(fragmentSettings);
-		models[modelIndex]->update();
-		models[modelIndex]->draw();
+		Model &model = *(std::get<Model*>(models[modelIndex]));
+
+		model.rotate(rotate);
+		model.scale(scale);
+		model.setFragmentShaderSettings(fragmentSettings);
+		model.update();
+		model.draw();
 
 		rotate = glm::vec3(0.0f);
 		scale = 1;
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		printSettings(true);
 	}
+	// Print settings but don't clear. Just for reference.
+	printSettings(false);
 }
 
 void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -369,3 +377,40 @@ void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action
 	}
 }
 
+void Renderer::printSettings(bool clear)
+{
+	std::string &path = (std::get<std::string>(models[modelIndex]));
+	unsigned int lines = 15;
+
+	auto boolStr = [](bool value){ return value ? "on" : "off"; };
+
+	std::cout << "Model: " <<  path << '\n'
+	   << "Index: " << modelIndex + 1 << '\n'
+	   << "Roughness: " << std::fixed << std::setprecision(3) << fragmentSettings.roughness << '\n'
+	   << "Ambient: " << fragmentSettings.ambientStrength << '\n'
+	   << "Diffuse: " << fragmentSettings.diffuseStrength << '\n'
+	   << "Specular: " << fragmentSettings.specularStrength << '\n'
+	   << "Color: " << fragmentSettings.surfaceColor.r << " "
+	   << fragmentSettings.surfaceColor.g << " " << fragmentSettings.surfaceColor.b << '\n'
+	   << "Fresnel: " << fragmentSettings.fresnel.r << " "
+	   << fragmentSettings.fresnel.g << " " << fragmentSettings.fresnel.b << '\n'
+	   << "D: " << boolStr(fragmentSettings.useBeckmann || fragmentSettings.useGGX) << '\n'
+	   << "Beckmann: " << boolStr(fragmentSettings.useBeckmann) << '\n'
+	   << "GGX: " << boolStr(fragmentSettings.useGGX) << '\n'
+	   << "G: " << boolStr(fragmentSettings.useG) << '\n'
+	   << "F: " << boolStr(fragmentSettings.useF) << '\n'
+	   << "Denominator: " << boolStr(fragmentSettings.useDenom) << '\n'
+	   << "Pi: " << boolStr(fragmentSettings.usePi) << '\n';
+
+	if (clear) {
+		// Move to beginning of line
+		std::cout << '\r';
+		for(; lines > 0; lines--)
+		{
+			// move up a line
+			std::cout << "\e[A";
+		}
+		// Erase screen from current line down.
+		std::cout << "\e[J";
+	}
+}

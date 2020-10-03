@@ -2,10 +2,12 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
 #include <vector>
 #include <array>
 #include <string>
-#include <glm/glm.hpp>
+#include <tuple>
 
 #include "Model.h"
 
@@ -19,7 +21,7 @@ class Renderer
 	private:
 		GLFWwindow* window;
 		Shader* shader;
-		std::vector<Model*> models;
+		std::vector<std::tuple<std::string, Model*>> models;
 		unsigned int modelIndex;
 
 		const unsigned int height = 800;
@@ -42,4 +44,5 @@ class Renderer
 		void initWindow();
 		static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		void loadModels(const char* modelDirectory);
+		void printSettings(bool clear);
 };
