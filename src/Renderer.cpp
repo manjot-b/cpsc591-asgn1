@@ -1,21 +1,22 @@
 #include <glad/glad.h>
-#include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include <iostream>
+#include <filesystem>
+
 #include "Renderer.h"
 
-Renderer::Renderer(std::vector<std::string> objPaths) :
-	rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)), scaleSpeed(1.1f)
+Renderer::Renderer(const char* modelDirectory) :
+	modelIndex(0), rotate(0.0f), scale(1.0f), rotationSpeed(glm::radians(5.0f)),
+	scaleSpeed(1.1f)
 {
 	initWindow();
-	Shader shader("shaders/vertex.glsl", "shaders/fragment.glsl");
-	shader.link();
-	for(const auto& path : objPaths)
-	{
-		models.emplace_back(path, shader);
-	}	
+	shader = new Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
+	shader->link();
+
+	loadModels(modelDirectory);
 	
 	// Setup perspective and camera matricies.
 	perspective = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
@@ -50,17 +51,17 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 		glm::vec3(0.98f, 0.97f, 0.95f), // SIlver
 	};
 
-	shader.use();
-	shader.setUniformMatrix4fv("perspective", perspective);
-	shader.setUniformMatrix4fv("view", view);
+	shader->use();
+	shader->setUniformMatrix4fv("perspective", perspective);
+	shader->setUniformMatrix4fv("view", view);
 
 	// This extracts the position of the camera.
 	glm::vec3 toCamera = glm::inverse(view) * glm::vec4(0.f, 0.f, 0.f, 1.f);
-	shader.setUniform3fv("toCamera", 1, &toCamera);
+	shader->setUniform3fv("toCamera", 1, &toCamera);
 	//std::cout<<glm::to_string(toCamera)<<std::endl;
 
-	shader.setUniform3fv("lightColors", lightColors.size(), lightColors.data());
-	shader.setUniform3fv("lightPositions", lightPositions.size(), lightPositions.data());
+	shader->setUniform3fv("lightColors", lightColors.size(), lightColors.data());
+	shader->setUniform3fv("lightPositions", lightPositions.size(), lightPositions.data());
 
 	fragmentSettings.useBeckmann = true;
 	fragmentSettings.useGGX = false;
@@ -79,7 +80,14 @@ Renderer::Renderer(std::vector<std::string> objPaths) :
 	glUseProgram(0);	// unbind shader
 }
 
-Renderer::~Renderer() {}
+Renderer::~Renderer()
+{
+	for (auto m : models)
+	{
+		delete m;
+	}
+	delete shader;
+}
 
 void Renderer::initWindow()
 {
@@ -133,6 +141,24 @@ void Renderer::initWindow()
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Renderer::loadModels(const char* modelDirectory)
+{
+	namespace fs = std::filesystem;
+	const std::string extension = ".obj";
+
+	unsigned int count = 1;
+	for (const auto& entry : fs::directory_iterator(modelDirectory))
+	{
+		if (entry.is_regular_file() && entry.path().extension() == extension)
+		{
+			std::cout << "Loading " << entry.path() << "...";
+			models.push_back(new Model(entry.path(), *shader));
+			std::cout << "Done! Index: " << count << "\n";
+			count++;
+		}
+	}
+}
+
 void Renderer::run()
 {
 
@@ -142,14 +168,12 @@ void Renderer::run()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		for(auto& model : models)
-		{
-			model.rotate(rotate);
-			model.scale(scale);
-			model.setFragmentShaderSettings(fragmentSettings);
-			model.update();
-			model.draw();
-		}
+		models[modelIndex]->rotate(rotate);
+		models[modelIndex]->scale(scale);
+		models[modelIndex]->setFragmentShaderSettings(fragmentSettings);
+		models[modelIndex]->update();
+		models[modelIndex]->draw();
+
 		rotate = glm::vec3(0.0f);
 		scale = 1;
 
@@ -177,6 +201,16 @@ void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action
 		{
 			switch(key)
 			{
+				// Select model
+				case GLFW_KEY_1:
+				case GLFW_KEY_2:
+				case GLFW_KEY_3:
+				case GLFW_KEY_4:
+				case GLFW_KEY_5:
+				case GLFW_KEY_6:
+				case GLFW_KEY_7:
+					renderer->modelIndex = key - GLFW_KEY_1;
+					break;
 				// Rotations
 				case GLFW_KEY_W:
 					renderer->rotate.x -= renderer->rotationSpeed;
@@ -314,7 +348,7 @@ void Renderer::keyCallback(GLFWwindow* window, int key, int scancode, int action
 							0.0f);
 					break;
 				case GLFW_KEY_0: // 0 is last number on keyboard.
-					fragmentSettings.fresnel = renderer->fresnels[9]; 
+					fragmentSettings.fresnel = renderer->fresnels.back(); 
 					break;
 				case GLFW_KEY_1:
 				case GLFW_KEY_2:

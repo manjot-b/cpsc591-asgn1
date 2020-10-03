@@ -9,7 +9,7 @@
 class Model
 {
 	public:
-		Model(const std::string &objPath, Shader shader);
+		Model(const std::string &objPath, const Shader& shader);
 		~Model();
 
 		/**
@@ -39,7 +39,7 @@ class Model
 		void setFragmentShaderSettings(const FragmentShaderSettings& settings);
 
 	private:
-		Shader shader;
+		const Shader& shader;
 		std::vector<Mesh*> meshes;
 		FragmentShaderSettings fragmentSettings;
 

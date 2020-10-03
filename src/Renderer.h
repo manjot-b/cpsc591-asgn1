@@ -12,14 +12,16 @@
 class Renderer
 {
 	public:
-		Renderer(std::vector<std::string> objPaths);
+		Renderer(const char* modelDirectory);
 		~Renderer();
 		void run();
 
 	private:
 		GLFWwindow* window;
-		std::vector<Model> models;
-		
+		Shader* shader;
+		std::vector<Model*> models;
+		unsigned int modelIndex;
+
 		static const unsigned int height = 600;
 		static const unsigned int width = 800;
 		const float aspectRatio = float(width) / height;
@@ -39,4 +41,5 @@ class Renderer
 
 		void initWindow();
 		static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		void loadModels(const char* modelDirectory);
 };
