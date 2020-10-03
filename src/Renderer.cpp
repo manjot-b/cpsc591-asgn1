@@ -115,8 +115,10 @@ void Renderer::initWindow()
 	glViewport(0, 0, width, height);
 	glfwSetFramebufferSizeCallback(window,
 			[](GLFWwindow* window, int newWidth, int newHeight) {
-		float aspectRatio = Renderer::width / Renderer::height;
-		float viewPortHeight = (1/aspectRatio) * width;
+		Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+
+		float aspectRatio = renderer->aspectRatio;
+		float viewPortHeight = (1/aspectRatio) * newWidth;
 		float viewPortWidth = newWidth;
 		float xPos = 0;
 		float yPos = 0;

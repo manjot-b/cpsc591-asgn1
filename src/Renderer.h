@@ -22,8 +22,8 @@ class Renderer
 		std::vector<Model*> models;
 		unsigned int modelIndex;
 
-		static const unsigned int height = 600;
-		static const unsigned int width = 800;
+		const unsigned int height = 800;
+		const unsigned int width = 800;
 		const float aspectRatio = float(width) / height;
 
 		glm::vec3 rotate;
